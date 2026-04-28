@@ -1,10 +1,15 @@
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Memuat data yang sudah disimpan
+# ========================
+# CONFIG
+# ========================
+st.set_page_config(page_title="Bike Sharing Dashboard", layout="wide")
+# ========================
+# LOAD DATA
+# ========================
 @st.cache_data
 def load_data():
     df_day = pd.read_csv('day_clean.csv')
@@ -13,122 +18,180 @@ def load_data():
 
 df_day, df_hour = load_data()
 
-# Judul Dashboard
-st.title('Bike Sharing Dashboard')
+# ========================
+# DATA
+# ========================
+# Mapping tahun
+df_day['year'] = df_day['yr'].map({0: 2011, 1: 2012})
+df_hour['year'] = df_hour['yr'].map({0: 2011, 1: 2012})
 
-st.write("Selamat datang di dashboard analisis data penyewaan sepeda!")
+# Mapping cuaca
+weather_map = {
+    1: 'Clear',
+    2: 'Mist',
+    3: 'Light Rain/Snow',
+    4: 'Heavy Rain/Snow'
+}
+df_day['weather_label'] = df_day['weathersit'].map(weather_map)
 
-# Tambahkan elemen-elemen dashboard lainnya di sini
-# Contoh: Visualisasi, Insight, Rekomendasi
+# ========================
+# SIDEBAR
+# ========================
+st.sidebar.header("Filter")
 
-st.header("Rata-rata Penyewaan Sepeda per Bulan (2011)")
-# Kode visualisasi dari pertanyaan 3
-df_2011 = df_day[df_day['yr'] == 2011]
-monthly_avg = df_2011.groupby('mnth')['cnt'].mean()
-peak_month = monthly_avg.idxmax()
+year_option = st.sidebar.selectbox(
+    "Pilih Tahun",
+    ["Semua", 2011, 2012]
+)
 
-fig_monthly_avg, ax = plt.subplots(figsize=(8, 5))
-ax.plot(monthly_avg.index, monthly_avg.values, marker='o')
-ax.scatter(peak_month, monthly_avg.loc[peak_month], s=100)
-ax.text(peak_month, monthly_avg.loc[peak_month] + 50,
-         f'{monthly_avg.loc[peak_month]:.0f}',
-         ha='center', va='bottom', fontsize=9)
-ax.set_title('Rata-rata Penyewaan Sepeda per Bulan (2011)')
-ax.set_xlabel('Bulan')
-ax.set_ylabel('Rata-rata cnt')
-st.pyplot(fig_monthly_avg)
+if year_option == "Semua":
+    df_day_filter = df_day.copy()
+else:
+    df_day_filter = df_day[df_day['year'] == year_option]
 
-st.write(f"Insight: Rata-rata penyewaan sepeda tertinggi pada tahun 2011 terjadi pada bulan {peak_month} sekitar {monthly_avg.loc[peak_month]:.0f}.")
+# ========================
+# TITLE
+# ========================
+st.title("🚴 Bike Sharing Dashboard")
+st.write("Dashboard analisis penyewaan sepeda 2011-2012")
 
-st.header("Rata-rata Penyewaan: Working Day vs Weekend per Season")
-# Kode visualisasi dari pertanyaan 2
-df_day['day_type'] = df_day['workingday'].replace({'Holiday': 'Weekend/Holiday'})
-grouped_season = df_day.groupby(['season', 'day_type'], observed=False)['cnt'].mean().unstack()
+# ========================
+# 1. BULAN TERBAIK
+# ========================
+st.subheader("📈 Penyewaan per Bulan")
 
-fig_season, ax_season = plt.subplots()
-grouped_season.plot(kind='bar', colormap='coolwarm', ax=ax_season)
-ax_season.set_ylim(0, grouped_season.values.max() * 1.1)
+# Urutan bulan
+month_order = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+]
 
-for container in ax_season.containers:
-    ax_season.bar_label(container, fmt='%.0f', label_type='edge', fontsize=8)
+df_day_filter = df_day_filter.copy()
 
-ax_season.legend(fontsize=8, title_fontsize=9)
-ax_season.set_title('Rata-rata Penyewaan: Working Day vs Weekend per Season')
-ax_season.set_xlabel('Season')
-ax_season.set_ylabel('Rata-rata cnt')
-ax_season.tick_params(axis='x', rotation=45)
-st.pyplot(fig_season)
+df_day_filter['mnth'] = pd.Categorical(
+    df_day_filter['mnth'],
+    categories=month_order,
+    ordered=True
+)
 
-st.write("Insight: Pada musim gugur (Fall), rata-rata penyewaan sepeda adalah yang tertinggi secara keseluruhan, baik pada hari kerja maupun akhir pekan/hari libur. Pada musim semi (Springer), gugur (Fall), dan dingin (Winter), rata-rata penyewaan sepeda pada hari kerja lebih tinggi dibandingkan akhir pekan/hari libur. Namun, pada musim panas (Summer), rata-rata penyewaan sepeda pada akhir pekan/hari libur sedikit lebih tinggi dibandingkan hari kerja.")
+monthly_avg = df_day_filter.groupby('mnth')['cnt'].mean().sort_index()
 
-st.header("Jam Puncak Penyewaan Sepeda per Bulan (2011 vs 2012)")
-# Kode visualisasi dari pertanyaan 4
-df_hour_2yr = df_hour[df_hour['yr'].isin([2011, 2012])].copy()
-grouped_hour = df_hour_2yr.groupby(['yr', 'mnth', 'hr'])['cnt'].mean().reset_index()
-peak_hour = grouped_hour.loc[grouped_hour.groupby(['yr', 'mnth'])['cnt'].idxmax()]
+if not monthly_avg.empty:
+    peak_month = monthly_avg.idxmax()
 
-fig_peak_hour, ax_peak_hour = plt.subplots(figsize=(10,6))
+    fig1, ax1 = plt.subplots(figsize=(8,5))
+    ax1.plot(monthly_avg.index, monthly_avg.values, marker='o')
+
+    y = monthly_avg.loc[peak_month]
+    ax1.scatter(peak_month, y, s=100)
+
+    ax1.text(peak_month, y - y*0.92,
+             f'{y:.0f}', ha='center', va='top', fontsize=9)
+
+    ax1.set_ylim(0, monthly_avg.max()*1.15)
+
+    ax1.set_title("Rata-rata Penyewaan per Bulan")
+    ax1.set_xlabel("Bulan")
+    ax1.set_ylabel("cnt")
+
+    plt.xticks(rotation=45)
+
+    st.pyplot(fig1)
+    st.success(f"Bulan tertinggi: {peak_month}")
+
+# ========================
+# 2. WORKDAY VS WEEKEND
+# ========================
+st.subheader("📊 Working Day vs Weekend")
+
+df_day_filter['day_type'] = df_day_filter['workingday'].replace({
+    'Holiday': 'Weekend/Holiday'
+})
+
+grouped = df_day_filter.groupby(['season','day_type'])['cnt'].mean().unstack()
+
+fig2, ax2 = plt.subplots()
+grouped.plot(kind='bar', colormap='coolwarm', ax=ax2)
+
+ax2.set_ylim(0, grouped.values.max()*1.1)
+
+for c in ax2.containers:
+    ax2.bar_label(c, fmt='%.0f', fontsize=8)
+
+st.pyplot(fig2)
+
+# ========================
+# 3. JAM PUNCAK
+# ========================
+st.subheader("⏰ Jam Puncak")
+
+grouped_hour = df_hour.groupby(['year','mnth','hr'])['cnt'].mean().reset_index()
+peak_hour = grouped_hour.loc[grouped_hour.groupby(['year','mnth'])['cnt'].idxmax()]
+
+fig3, ax3 = plt.subplots()
+
 for year in [2011, 2012]:
-    data = peak_hour[peak_hour['yr'] == year]
-    ax_peak_hour.plot(data['mnth'], data['hr'], marker='o', label=str(year))
-    for i in range(len(data)):
-        x = data['mnth'].iloc[i]
-        y = data['hr'].iloc[i]
-        ax_peak_hour.text(x, y + 0.3, f'{int(y)}', ha='center', fontsize=8)
+    data = peak_hour[peak_hour['year'] == year]
+    ax3.plot(data['mnth'], data['hr'], marker='o', label=str(year))
 
-ax_peak_hour.set_title('Jam Puncak Penyewaan Sepeda per Bulan (2011 vs 2012)')
-ax_peak_hour.set_xlabel('Bulan')
-ax_peak_hour.set_ylabel('Jam Puncak')
-ax_peak_hour.set_xticks(range(1,13))
-ax_peak_hour.set_yticks(range(0,24))
-ax_peak_hour.legend(title='Tahun')
-st.pyplot(fig_peak_hour)
+ax3.legend()
+ax3.set_title("Jam Puncak per Bulan")
+ax3.set_xlabel("Bulan")
+ax3.set_ylabel("Jam")
 
-st.write("Insight: Jam 17:00 (5 sore) merupakan waktu puncak penyewaan sepeda tertinggi di setiap bulan selama tahun 2011 dan 2012.")
+st.pyplot(fig3)
 
-st.header("Proporsi Casual vs Registered per Season")
-# Kode visualisasi dari pertanyaan 5
-grouped_casual_registered = df_day.groupby('season')[['casual', 'registered']].sum()
-prop = grouped_casual_registered.div(grouped_casual_registered.sum(axis=1), axis=0)
+# ========================
+# 4. CASUAL vs REGISTERED
+# ========================
+st.subheader("👥 Proporsi Pengguna")
 
-fig_prop, ax_prop = plt.subplots(figsize=(8,5))
-prop.plot(kind='bar', stacked=True, colormap='coolwarm', ax=ax_prop)
+grouped_user = df_day.groupby('season')[['casual','registered']].sum()
+prop = grouped_user.div(grouped_user.sum(axis=1), axis=0)
 
-for container in ax_prop.containers:
-    ax_prop.bar_label(container, fmt='%.1f', label_type='center', fontsize=15)
+fig4, ax4 = plt.subplots()
+prop.plot(kind='bar', stacked=True, colormap='coolwarm', ax=ax4)
 
-ax_prop.legend(title='User Type', fontsize=8, title_fontsize=9, loc='upper right')
-ax_prop.set_title('Proporsi Casual vs Registered per Season')
-ax_prop.set_xlabel('Season')
-ax_prop.set_ylabel('Proporsi')
-ax_prop.tick_params(axis='x', rotation=0)
-st.pyplot(fig_prop)
+for c in ax4.containers:
+    ax4.bar_label(c, fmt='%.1f', label_type='center', fontsize=8)
 
-st.write("Insight: Pengguna terdaftar mendominasi total penyewaan sepeda di semua musim. Proporsi pengguna casual relatif lebih tinggi pada musim panas (Summer) dan gugur (Fall). Sementara itu, pada musim semi (Springer) dan dingin (Winter), proporsi pengguna casual lebih rendah.")
+st.pyplot(fig4)
 
-st.header("Penurunan Penyewaan pada Cuaca Buruk")
-# Kode visualisasi dari pertanyaan 6
-df_weather = df_day[df_day['yr'].isin([2011, 2012])]
-avg_weather = df_weather.groupby('weathersit')['cnt'].mean()
+# ========================
+# 5. CUACA
+# ========================
+st.subheader("🌧️ Dampak Cuaca")
 
-clear = avg_weather.loc['Clear']
-bad = avg_weather.loc[['Light Rain/Snow', 'Heavy Rain/Snow']].mean()
+avg_weather = df_day.groupby('weather_label')['cnt'].mean()
+
+# AMAN (tidak error)
+clear = avg_weather.get('Clear', 0)
+bad = avg_weather.loc[
+    avg_weather.index.isin(['Light Rain/Snow','Heavy Rain/Snow'])
+].mean()
 
 comparison = pd.DataFrame({
-    'Kategori': ['Cerah (1)', 'Buruk (3-4)'],
+    'Kategori': ['Cerah', 'Buruk'],
     'Rata-rata': [clear, bad]
 })
 
-fig_weather, ax_weather = plt.subplots(figsize=(7,5))
-bars = ax_weather.bar(comparison['Kategori'], comparison['Rata-rata'])
+fig5, ax5 = plt.subplots()
+bars = ax5.bar(comparison['Kategori'], comparison['Rata-rata'])
 
 for bar in bars:
     y = bar.get_height()
-    ax_weather.text(bar.get_x() + bar.get_width()/2, y,
-             f'{y:.0f}', ha='center', va='bottom', fontsize=9)
+    ax5.text(bar.get_x()+bar.get_width()/2, y,
+             f'{y:.0f}', ha='center')
 
-ax_weather.set_title(f'Penurunan Penyewaan pada Cuaca')
-ax_weather.set_ylabel('Rata-rata cnt')
-st.pyplot(fig_weather)
+st.pyplot(fig5)
 
-st.write("Insight: Rata-rata jumlah penyewaan sepeda mengalami penurunan signifikan pada kondisi cuaca buruk dibandingkan dengan kondisi cuaca cerah. Hal ini menunjukkan penurunan sebesar kurang lebih 63% pada kondisi cuaca buruk dibandingkan cuaca cerah.")
+# Hitung penurunan aman
+if clear != 0:
+    drop_pct = (clear - bad)/clear * 100
+    st.warning(f"Penurunan: {drop_pct:.2f}%")
+
+# ========================
+# FOOTER
+# ========================
+st.markdown("---")
+st.caption("Dashboard by Hasna 🚀")
