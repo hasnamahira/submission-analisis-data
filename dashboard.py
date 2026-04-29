@@ -27,21 +27,14 @@ df_day, df_hour = load_data()
 df_day['dteday'] = pd.to_datetime(df_day['dteday'])
 df_hour['dteday'] = pd.to_datetime(df_hour['dteday'])
 
-df_day['year'] = df_day['dteday'].dt.year
-df_hour['year'] = df_hour['dteday'].dt.year
-
 df_day['month'] = df_day['dteday'].dt.month_name()
 df_hour['month'] = df_hour['dteday'].dt.month_name()
 
-df_day['day_name'] = df_day['dteday'].dt.day_name()
-df_hour['day_name'] = df_hour['dteday'].dt.day_name()
-
 # ========================
-# SIDEBAR FILTER
+# SIDEBAR FILTER (HANYA TANGGAL)
 # ========================
 st.sidebar.header("🔎 Filter")
 
-# tanggal
 min_date = df_day['dteday'].min()
 max_date = df_day['dteday'].max()
 
@@ -52,71 +45,46 @@ date_range = st.sidebar.date_input(
     max_value=max_date
 )
 
-# bulan
-month_order = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December'
-]
-
-month_option = st.sidebar.multiselect(
-    "Pilih Bulan",
-    month_order,
-    default=month_order
-)
-
-# hari
-day_order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
-
-day_option = st.sidebar.multiselect(
-    "Pilih Hari",
-    day_order,
-    default=day_order
-)
-
-# tahun
-year_option = st.sidebar.multiselect(
-    "Pilih Tahun",
-    sorted(df_day['year'].unique()),
-    default=sorted(df_day['year'].unique())
-)
-
 # ========================
 # APPLY FILTER
 # ========================
 df_day_filter = df_day.copy()
 df_hour_filter = df_hour.copy()
 
-# filter tanggal
 if len(date_range) == 2:
     start_date, end_date = pd.to_datetime(date_range)
+
     df_day_filter = df_day_filter[
         (df_day_filter['dteday'] >= start_date) &
         (df_day_filter['dteday'] <= end_date)
     ]
+
     df_hour_filter = df_hour_filter[
         (df_hour_filter['dteday'] >= start_date) &
         (df_hour_filter['dteday'] <= end_date)
     ]
 
-# filter tahun
-df_day_filter = df_day_filter[df_day_filter['year'].isin(year_option)]
-df_hour_filter = df_hour_filter[df_hour_filter['year'].isin(year_option)]
-
-# filter bulan
-df_day_filter = df_day_filter[df_day_filter['month'].isin(month_option)]
-df_hour_filter = df_hour_filter[df_hour_filter['month'].isin(month_option)]
-
-# filter hari
-df_day_filter = df_day_filter[df_day_filter['day_name'].isin(day_option)]
-df_hour_filter = df_hour_filter[df_hour_filter['day_name'].isin(day_option)]
-
 # urutan bulan
-df_day_filter['month'] = pd.Categorical(df_day_filter['month'], categories=month_order, ordered=True)
-df_hour_filter['month'] = pd.Categorical(df_hour_filter['month'], categories=month_order, ordered=True)
+month_order = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December'
+]
+
+df_day_filter['month'] = pd.Categorical(
+    df_day_filter['month'],
+    categories=month_order,
+    ordered=True
+)
+
+df_hour_filter['month'] = pd.Categorical(
+    df_hour_filter['month'],
+    categories=month_order,
+    ordered=True
+)
 
 # cek data kosong
 if df_day_filter.empty or df_hour_filter.empty:
-    st.warning("Data tidak tersedia untuk kombinasi filter ini.")
+    st.warning("Data tidak tersedia untuk rentang tanggal ini.")
     st.stop()
 
 # ========================
@@ -217,34 +185,6 @@ for c in ax4.containers:
     ax4.bar_label(c, fmt='%.2f', label_type='center', fontsize=8)
 
 st.pyplot(fig4)
-
-# ========================
-# 5. DAMPAK CUACA
-# ========================
-st.subheader("🌧️ Dampak Cuaca")
-
-avg_weather = df_day_filter.groupby('weathersit')['cnt'].mean()
-
-clear = avg_weather.get(1, 0)
-bad = avg_weather.loc[avg_weather.index.isin([3,4])].mean()
-
-comparison = pd.DataFrame({
-    'Kategori': ['Cerah', 'Buruk'],
-    'Rata-rata': [clear, bad]
-})
-
-fig5, ax5 = plt.subplots()
-bars = ax5.bar(comparison['Kategori'], comparison['Rata-rata'])
-
-for bar in bars:
-    y = bar.get_height()
-    ax5.text(bar.get_x()+bar.get_width()/2, y, f'{y:.0f}', ha='center')
-
-st.pyplot(fig5)
-
-if clear != 0:
-    drop_pct = (clear - bad)/clear * 100
-    st.metric("Penurunan saat cuaca buruk", f"{drop_pct:.2f}%")
 
 # ========================
 # FOOTER
