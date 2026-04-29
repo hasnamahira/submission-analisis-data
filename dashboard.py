@@ -24,7 +24,6 @@ df_day, df_hour = load_data()
 # ========================
 # PREPROCESSING
 # ========================
-
 df_day['year'] = df_day['yr'].map({0: 2011, 1: 2012})
 df_hour['year'] = df_hour['yr'].map({0: 2011, 1: 2012})
 
@@ -37,7 +36,7 @@ weather_map = {
 df_day['weather_label'] = df_day['weathersit'].map(weather_map)
 
 # ========================
-# SIDEBAR FILTER
+# SIDEBAR
 # ========================
 st.sidebar.header("🔎 Filter")
 
@@ -46,44 +45,27 @@ year_option = st.sidebar.selectbox(
     ["Semua", 2011, 2012]
 )
 
+if year_option == "Semua":
+    df_day_filter = df_day.copy()
+    df_hour_filter = df_hour.copy()
+else:
+    df_day_filter = df_day[df_day['year'] == year_option]
+    df_hour_filter = df_hour[df_hour['year'] == year_option]
+
 month_order = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-month_option = st.sidebar.multiselect(
-    "Pilih Bulan",
-    month_order,
-    default=month_order
+
+df_day_filter['mnth'] = pd.Categorical(
+    df_day_filter['mnth'],
+    categories=month_order,
+    ordered=True
 )
 
-day_order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
-day_option = st.sidebar.multiselect(
-    "Pilih Hari",
-    day_order,
-    default=day_order
+df_hour_filter['mnth'] = pd.Categorical(
+    df_hour_filter['mnth'],
+    categories=month_order,
+    ordered=True
 )
 
-# ========================
-# APPLY FILTER
-# ========================
-df_day_filter = df_day.copy()
-df_hour_filter = df_hour.copy()
-
-if year_option != "Semua":
-    df_day_filter = df_day_filter[df_day_filter['year'] == year_option]
-    df_hour_filter = df_hour_filter[df_hour_filter['year'] == year_option]
-
-df_day_filter = df_day_filter[df_day_filter['mnth'].isin(month_option)]
-df_hour_filter = df_hour_filter[df_hour_filter['mnth'].isin(month_option)]
-
-df_day_filter = df_day_filter[df_day_filter['weekday'].isin(day_option)]
-df_hour_filter = df_hour_filter[df_hour_filter['weekday'].isin(day_option)]
-
-# urutkan bulan
-df_day_filter['mnth'] = pd.Categorical(df_day_filter['mnth'], categories=month_order, ordered=True)
-df_hour_filter['mnth'] = pd.Categorical(df_hour_filter['mnth'], categories=month_order, ordered=True)
-
-# cek data kosong
-if df_day_filter.empty or df_hour_filter.empty:
-    st.warning("Data tidak tersedia untuk kombinasi filter ini.")
-    st.stop()
 # ========================
 # TITLE
 # ========================
@@ -198,28 +180,6 @@ else:
     ax4.legend(title="User Type", fontsize=8)
 
     st.pyplot(fig4)
-
-# ========================
-# 4. JAM TERTINGGI
-# ========================
-st.subheader("⏰ Jam Tertinggi Penyewaan")
-
-hourly_avg = df_hour_filter.groupby('hr')['cnt'].mean()
-
-fig3, ax3 = plt.subplots()
-ax3.plot(hourly_avg.index, hourly_avg.values, marker='o')
-
-peak_hour = hourly_avg.idxmax()
-peak_val = hourly_avg.max()
-
-ax3.scatter(peak_hour, peak_val, s=120)
-ax3.text(peak_hour, peak_val*0.92, f'{peak_val:.0f}', ha='center')
-
-ax3.set_xticks(range(0,24))
-ax3.set_ylim(0, hourly_avg.max()*1.15)
-
-st.pyplot(fig3)
-st.success(f"Jam tertinggi: {int(peak_hour)}:00")
 
 # ========================
 # FOOTER
