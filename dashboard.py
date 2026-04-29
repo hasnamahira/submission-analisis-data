@@ -24,6 +24,7 @@ df_day, df_hour = load_data()
 # ========================
 # PREPROCESSING
 # ========================
+
 df_day['year'] = df_day['yr'].map({0: 2011, 1: 2012})
 df_hour['year'] = df_hour['yr'].map({0: 2011, 1: 2012})
 
@@ -203,43 +204,6 @@ else:
 # ========================
 st.subheader("⏰ Jam Tertinggi Penyewaan")
 
-# gunakan data hasil filter
-df_hour_peak = df_hour_filter.copy()
-
-# agregasi rata-rata per jam
-hourly_avg = df_hour_peak.groupby('hr')['cnt'].mean()
-
-if hourly_avg.empty:
-    st.warning("Data jam tidak tersedia.")
-else:
-    peak_hour = hourly_avg.idxmax()
-    peak_value = hourly_avg.max()
-
-    fig5, ax5 = plt.subplots(figsize=(8,5))
-    ax5.plot(hourly_avg.index, hourly_avg.values, marker='o')
-
-    # highlight jam tertinggi
-    ax5.scatter(peak_hour, peak_value, s=120)
-
-    ax5.text(peak_hour, peak_value * 0.92,
-             f'{peak_value:.0f}', ha='center', fontsize=9)
-
-    ax5.set_title("Rata-rata Penyewaan per Jam")
-    ax5.set_xlabel("Jam (0–23)")
-    ax5.set_ylabel("Rata-rata cnt")
-
-    ax5.set_xticks(range(0,24))
-    ax5.set_ylim(0, hourly_avg.max()*1.15)
-
-    st.pyplot(fig5)
-
-    st.success(f"Jam tertinggi: {int(peak_hour)}:00 dengan rata-rata {peak_value:.0f}")
-
-# ========================
-# 3. JAM TERTINGGI
-# ========================
-st.subheader("⏰ Jam Tertinggi")
-
 hourly_avg = df_hour_filter.groupby('hr')['cnt'].mean()
 
 fig3, ax3 = plt.subplots()
@@ -257,34 +221,6 @@ ax3.set_ylim(0, hourly_avg.max()*1.15)
 st.pyplot(fig3)
 st.success(f"Jam tertinggi: {int(peak_hour)}:00")
 
-# ========================
-# 5. DAMPAK CUACA
-# ========================
-st.subheader("🌧️ Dampak Cuaca")
-
-avg_weather = df_day_filter.groupby('weathersit')['cnt'].mean()
-
-clear = avg_weather.get(1, 0)
-bad = avg_weather.loc[avg_weather.index.isin([3,4])].mean()
-
-comparison = pd.DataFrame({
-    'Kategori': ['Cerah', 'Buruk'],
-    'Rata-rata': [clear, bad]
-})
-
-fig5, ax5 = plt.subplots()
-bars = ax5.bar(comparison['Kategori'], comparison['Rata-rata'])
-
-for bar in bars:
-    y = bar.get_height()
-    ax5.text(bar.get_x()+bar.get_width()/2, y, f'{y:.0f}', ha='center')
-
-st.pyplot(fig5)
-
-if clear != 0:
-    drop_pct = (clear - bad)/clear * 100
-    st.metric("Penurunan saat cuaca buruk", f"{drop_pct:.2f}%")
-    
 # ========================
 # FOOTER
 # ========================
