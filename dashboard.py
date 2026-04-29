@@ -133,21 +133,51 @@ st.pyplot(fig1)
 # ========================
 st.subheader("📊 Working Day vs Weekend")
 
-df_day_filter['day_type'] = df_day_filter['workingday'].replace({
+# copy biar aman (hindari SettingWithCopyWarning)
+df_temp = df_day_filter.copy()
+
+# pastikan mapping benar
+df_temp['day_type'] = df_temp['workingday'].replace({
     'Working Day': 'Working Day',
     'Holiday': 'Weekend/Holiday'
 })
 
-grouped = df_day_filter.groupby(['season','day_type'])['cnt'].mean().unstack()
+# grouping
+grouped = df_temp.groupby(['season','day_type'])['cnt'].mean().unstack()
+
+# pastikan urutan kolom konsisten
 grouped = grouped.reindex(columns=['Working Day','Weekend/Holiday'])
 
-fig2, ax2 = plt.subplots()
-grouped.plot(kind='bar', colormap='coolwarm', ax=ax2)
+# cek data kosong
+if grouped.empty:
+    st.warning("Data tidak tersedia.")
+else:
+    fig2, ax2 = plt.subplots(figsize=(8,5))
 
-for c in ax2.containers:
-    ax2.bar_label(c, fmt='%.0f', fontsize=8)
+    grouped.plot(
+        kind='bar',
+        colormap='coolwarm',
+        ax=ax2
+    )
 
-st.pyplot(fig2)
+    # label nilai
+    for c in ax2.containers:
+        ax2.bar_label(c, fmt='%.0f', fontsize=8)
+
+    # judul & label
+    ax2.set_title("Rata-rata Penyewaan: Working Day vs Weekend")
+    ax2.set_xlabel("Season")
+    ax2.set_ylabel("Rata-rata cnt")
+
+    # 🔥 FIX LEGEND (KECIL & CLEAN)
+    ax2.legend(
+        title='Kategori Hari',
+        fontsize=8,
+        title_fontsize=9,
+        frameon=False
+    )
+
+    st.pyplot(fig2)
 
 # ========================
 # 3. JAM TERTINGGI
