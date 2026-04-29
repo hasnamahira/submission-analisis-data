@@ -1,37 +1,19 @@
 # Bike Sharing Dashboard
 
-Dashboard interaktif berbasis **Streamlit** untuk menganalisis data penyewaan sepeda tahun 2011–2012.  
-Dashboard ini digunakan untuk mengeksplorasi pola penggunaan sepeda berdasarkan waktu, musim, dan tipe hari.
+Dashboard untuk menganalisis dan mengeksplorasi pola penggunaan sepeda berdasarkan waktu, musim, dan tipe hari pada tahun 2011-2012.
 
 ---
 
-## 📌 Fitur Dashboard
+## Fitur Dashboard
 
 - 📈 Analisis tren penyewaan sepeda per bulan  
 - 📊 Perbandingan penggunaan pada Working Day vs Weekend/Holiday  
 - ⏰ Analisis jam dengan jumlah penyewaan tertinggi  
 - 👥 Proporsi pengguna (casual vs registered)  
-- 🔎 Filter data berdasarkan rentang tanggal  
 
 ---
 
-## 📂 Struktur Project
-
-```
-submission-dashboard/
-│
-├── dashboard/
-│   ├── dashboard.py
-│   ├── day_clean.csv
-│   ├── hour_clean.csv
-│
-├── README.md
-├── requirements.txt
-```
-
----
-
-## ⚙️ Instalasi
+## Instalasi
 
 Pastikan sudah menginstal Python (versi 3.8 atau lebih baru).
 
@@ -54,20 +36,7 @@ pip install -r requirements.txt
 ```
 
 ---
-
-## 📦 Requirements
-
-Jika belum ada file `requirements.txt`, gunakan:
-
-```
-streamlit
-pandas
-matplotlib
-```
-
----
-
-## ▶️ Cara Menjalankan Dashboard
+## Cara Menjalankan Dashboard
 
 Jalankan perintah berikut di terminal:
 
@@ -75,10 +44,5 @@ Jalankan perintah berikut di terminal:
 streamlit run dashboard/dashboard.py
 ```
 
-Lalu buka di browser:
-
-```
-http://localhost:8501
-```
-
----
+## Cara Menjalankan Dashboard
+https://hasnamahiraa.streamlit.app/
