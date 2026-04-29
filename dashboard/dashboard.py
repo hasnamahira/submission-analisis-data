@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 
 # ========================
 # CONFIG
@@ -15,9 +16,11 @@ st.set_page_config(
 # ========================
 @st.cache_data
 def load_data():
-    df_day = pd.read_csv('day_clean.csv')
-    df_hour = pd.read_csv('hour_clean.csv')
-    return df_day, df_hour
+
+    BASE_DIR = os.path.dirname(__file__)
+
+    df_day = pd.read_csv(os.path.join(BASE_DIR, 'day_clean.csv'))
+    df_hour = pd.read_csv(os.path.join(BASE_DIR, 'hour_clean.csv'))
 
 df_day, df_hour = load_data()
 
