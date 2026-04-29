@@ -44,5 +44,5 @@ Jalankan perintah berikut di terminal:
 streamlit run dashboard/dashboard.py
 ```
 
-## Cara Menjalankan Dashboard
+## Streamlit Cloud
 https://hasnamahiraa.streamlit.app/
