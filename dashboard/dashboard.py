@@ -21,8 +21,7 @@ def load_data():
 
     df_day = pd.read_csv(os.path.join(BASE_DIR, 'day_clean.csv'))
     df_hour = pd.read_csv(os.path.join(BASE_DIR, 'hour_clean.csv'))
-
-df_day, df_hour = load_data()
+    return df_day, df_hour
 
 # ========================
 # PREPROCESSING
