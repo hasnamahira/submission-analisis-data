@@ -36,7 +36,7 @@ weather_map = {
 df_day['weather_label'] = df_day['weathersit'].map(weather_map)
 
 # ========================
-# SIDEBAR
+# SIDEBAR FILTER
 # ========================
 st.sidebar.header("🔎 Filter")
 
@@ -45,27 +45,44 @@ year_option = st.sidebar.selectbox(
     ["Semua", 2011, 2012]
 )
 
-if year_option == "Semua":
-    df_day_filter = df_day.copy()
-    df_hour_filter = df_hour.copy()
-else:
-    df_day_filter = df_day[df_day['year'] == year_option]
-    df_hour_filter = df_hour[df_hour['year'] == year_option]
-
 month_order = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-
-df_day_filter['mnth'] = pd.Categorical(
-    df_day_filter['mnth'],
-    categories=month_order,
-    ordered=True
+month_option = st.sidebar.multiselect(
+    "Pilih Bulan",
+    month_order,
+    default=month_order
 )
 
-df_hour_filter['mnth'] = pd.Categorical(
-    df_hour_filter['mnth'],
-    categories=month_order,
-    ordered=True
+day_order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+day_option = st.sidebar.multiselect(
+    "Pilih Hari",
+    day_order,
+    default=day_order
 )
 
+# ========================
+# APPLY FILTER
+# ========================
+df_day_filter = df_day.copy()
+df_hour_filter = df_hour.copy()
+
+if year_option != "Semua":
+    df_day_filter = df_day_filter[df_day_filter['year'] == year_option]
+    df_hour_filter = df_hour_filter[df_hour_filter['year'] == year_option]
+
+df_day_filter = df_day_filter[df_day_filter['mnth'].isin(month_option)]
+df_hour_filter = df_hour_filter[df_hour_filter['mnth'].isin(month_option)]
+
+df_day_filter = df_day_filter[df_day_filter['weekday'].isin(day_option)]
+df_hour_filter = df_hour_filter[df_hour_filter['weekday'].isin(day_option)]
+
+# urutkan bulan
+df_day_filter['mnth'] = pd.Categorical(df_day_filter['mnth'], categories=month_order, ordered=True)
+df_hour_filter['mnth'] = pd.Categorical(df_hour_filter['mnth'], categories=month_order, ordered=True)
+
+# cek data kosong
+if df_day_filter.empty or df_hour_filter.empty:
+    st.warning("Data tidak tersedia untuk kombinasi filter ini.")
+    st.stop()
 # ========================
 # TITLE
 # ========================
@@ -217,6 +234,56 @@ else:
     st.pyplot(fig5)
 
     st.success(f"Jam tertinggi: {int(peak_hour)}:00 dengan rata-rata {peak_value:.0f}")
+
+# ========================
+# 3. JAM TERTINGGI
+# ========================
+st.subheader("⏰ Jam Tertinggi")
+
+hourly_avg = df_hour_filter.groupby('hr')['cnt'].mean()
+
+fig3, ax3 = plt.subplots()
+ax3.plot(hourly_avg.index, hourly_avg.values, marker='o')
+
+peak_hour = hourly_avg.idxmax()
+peak_val = hourly_avg.max()
+
+ax3.scatter(peak_hour, peak_val, s=120)
+ax3.text(peak_hour, peak_val*0.92, f'{peak_val:.0f}', ha='center')
+
+ax3.set_xticks(range(0,24))
+ax3.set_ylim(0, hourly_avg.max()*1.15)
+
+st.pyplot(fig3)
+st.success(f"Jam tertinggi: {int(peak_hour)}:00")
+
+# ========================
+# 5. DAMPAK CUACA
+# ========================
+st.subheader("🌧️ Dampak Cuaca")
+
+avg_weather = df_day_filter.groupby('weathersit')['cnt'].mean()
+
+clear = avg_weather.get(1, 0)
+bad = avg_weather.loc[avg_weather.index.isin([3,4])].mean()
+
+comparison = pd.DataFrame({
+    'Kategori': ['Cerah', 'Buruk'],
+    'Rata-rata': [clear, bad]
+})
+
+fig5, ax5 = plt.subplots()
+bars = ax5.bar(comparison['Kategori'], comparison['Rata-rata'])
+
+for bar in bars:
+    y = bar.get_height()
+    ax5.text(bar.get_x()+bar.get_width()/2, y, f'{y:.0f}', ha='center')
+
+st.pyplot(fig5)
+
+if clear != 0:
+    drop_pct = (clear - bad)/clear * 100
+    st.metric("Penurunan saat cuaca buruk", f"{drop_pct:.2f}%")
     
 # ========================
 # FOOTER
