@@ -182,6 +182,43 @@ else:
     st.pyplot(fig4)
 
 # ========================
+# 4. JAM TERTINGGI
+# ========================
+st.subheader("⏰ Jam Tertinggi Penyewaan")
+
+# gunakan data hasil filter
+df_hour_peak = df_hour_filter.copy()
+
+# agregasi rata-rata per jam
+hourly_avg = df_hour_peak.groupby('hr')['cnt'].mean()
+
+if hourly_avg.empty:
+    st.warning("Data jam tidak tersedia.")
+else:
+    peak_hour = hourly_avg.idxmax()
+    peak_value = hourly_avg.max()
+
+    fig5, ax5 = plt.subplots(figsize=(8,5))
+    ax5.plot(hourly_avg.index, hourly_avg.values, marker='o')
+
+    # highlight jam tertinggi
+    ax5.scatter(peak_hour, peak_value, s=120)
+
+    ax5.text(peak_hour, peak_value * 0.92,
+             f'{peak_value:.0f}', ha='center', fontsize=9)
+
+    ax5.set_title("Rata-rata Penyewaan per Jam")
+    ax5.set_xlabel("Jam (0–23)")
+    ax5.set_ylabel("Rata-rata cnt")
+
+    ax5.set_xticks(range(0,24))
+    ax5.set_ylim(0, hourly_avg.max()*1.15)
+
+    st.pyplot(fig5)
+
+    st.success(f"Jam tertinggi: {int(peak_hour)}:00 dengan rata-rata {peak_value:.0f}")
+    
+# ========================
 # FOOTER
 # ========================
 st.markdown("---")
