@@ -93,7 +93,7 @@ if df_day_filter.empty or df_hour_filter.empty:
 st.title("🚴 Bike Sharing Dashboard")
 st.caption("Analisis Penyewaan Sepeda 2011–2012")
 
-st.info(f"Filter aktif: Tanggal={date_range}, Tahun={year_option}")
+st.info(f"Rentang tanggal: {date_range[0]} sampai {date_range[1]}")
 
 # ========================
 # KPI
