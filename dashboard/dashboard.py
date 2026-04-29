@@ -23,6 +23,8 @@ def load_data():
     df_hour = pd.read_csv(os.path.join(BASE_DIR, 'hour_clean.csv'))
     return df_day, df_hour
 
+df_day, df_hour = load_data()
+
 # ========================
 # PREPROCESSING
 # ========================
